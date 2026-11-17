@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Firebase 混合推理测试</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.6; }
+    body { max-width: 54rem; margin: 2rem auto; padding: 0 1rem 3rem; }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+    p { margin: .7rem 0; }
+    .note { padding: .8rem 1rem; border: 1px solid #8888; border-radius: .5rem; }
+    label { display: block; margin: .8rem 0 .35rem; }
+    textarea, input[type="text"] { box-sizing: border-box; width: 100%; padding: .65rem; font: inherit; }
+    textarea { min-height: 7rem; resize: vertical; }
+    button { font: inherit; padding: .6rem .9rem; cursor: pointer; }
+    button:disabled { cursor: not-allowed; }
+    .actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+    .consent { display: flex; align-items: flex-start; gap: .55rem; padding: .75rem; border: 1px solid #8888; }
+    .consent input { margin-top: .4rem; }
+    code { overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; border: 1px solid #8888; min-height: 4rem; }
+    .status { margin: 1rem 0; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <h1>Firebase 混合推理测试</h1>
+  <p>验证 Firebase JavaScript SDK 的端侧、云端与端侧优先路径。SDK 固定为 13.4.0，不加载 Analytics。</p>
+  <p class="note">本页仅用于 localhost 开发。加载 Firebase SDK、App Check 验证及模型下载需要联网；“只测端侧”不向云端发送提示词。云端或可能回退到云端的测试需要单独同意。先使用非私人测试文本。</p>
+  <p id="status" class="status" role="status">正在加载 Firebase SDK。</p>
+
+  <h2>1. 测试 Firebase 端侧调用</h2>
+  <label for="prompt">本次提示词</label>
+  <textarea id="prompt">用两句话解释：端侧推理在设备本地运行，云端推理调用远程服务。</textarea>
+  <div class="actions">
+    <button id="local" disabled>只测端侧</button>
+  </div>
+  <p>本按钮使用 <code>ONLY_ON_DEVICE</code>；端侧失败时直接报错，不自动上传。</p>
+
+  <h2>2. 配置并验证 App Check</h2>
+  <ol>
+    <li>按 F12 打开开发者工具，在 Console（控制台）中找到 Firebase 输出的 App Check debug token。</li>
+    <li>在 Firebase 控制台进入“安全 / App Check / 应用”，为本 Web 应用登记该 debug token。</li>
+    <li>回到这里点击“验证 App Check”。token 不用发给助手，也不要提交进仓库。</li>
+  </ol>
+  <p><a href="https://console.firebase.google.com/project/build-hybrid-ai-d832c/appcheck" target="_blank" rel="noopener noreferrer">打开本项目的 App Check</a></p>
+  <div class="actions">
+    <button id="app-check" disabled>验证 App Check</button>
+  </div>
+  <p>本页使用 SDK 官方本地 debug 模式，不伪造验证结果。正式发布前需配置生产验证提供方，不能直接发布此调试页。</p>
+
+  <h2>3. 测试云端与端侧优先</h2>
+  <label for="cloud-model">云端模型名称</label>
+  <input id="cloud-model" type="text" value="gemini-3.5-flash-lite" spellcheck="false">
+  <p>这里预填 SDK 13.4.0 的默认混合推理云端模型；是否已对项目开放、是否有免费额度，以 Firebase 控制台和实际请求为准。</p>
+  <label class="consent">
+    <input id="cloud-consent" type="checkbox">
+    <span>我同意将上方当前提示词发送到此 Firebase 项目的云端模型，并已确认项目费用设置。修改提示词或模型后需要重新同意。</span>
+  </label>
+  <div class="actions">
+    <button id="cloud" disabled>只测云端</button>
+    <button id="hybrid" disabled>测试端侧优先</button>
+  </div>
+  <p>端侧优先使用 <code>PREFER_ON_DEVICE</code>。端侧可用时通常仍走本地；只有日志真实返回 <code>in_cloud</code> 才能证明该次走了云端，不把仅本地成功当成回退成功。</p>
+
+  <h2>日志</h2>
+  <pre id="log" role="log" aria-live="polite"></pre>
+  <h2>本次回复</h2>
+  <pre id="reply" aria-live="polite">尚未生成。</pre>
+
+  <script type="module" src="./firebase-hybrid-test.js"></script>
+</body>
+</html>
